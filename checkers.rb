@@ -6,14 +6,17 @@ class Board
 
   def initialize(dup = false)
     @grid = Array.new(8){ Array.new(8) {nil} }
+    #REV: so don't addpawns if you pass in "true"?
     addpawns unless dup
   end
 
   def addpawns
+    #REV: fairly clear method, but quite nested
     8.times do |row|
       color = row < 4 ? :w : :b
       8.times do |col|
         if (row + col) % 2 == 0
+          #REV: why do you have these separate? why not if[0,1,2,5,6,7].include?
           if [0,2,6].include?(row)
             @grid[row][col] = Pawn.new(color, self, [row, col])
           elsif [1,5,7].include?(row)
@@ -152,6 +155,7 @@ class Pawn
   def offsets
     offsets = []
     unless self.king
+      #REV: I like this, looks clever/elegant
       self.color == :w ? offsets = Diagonals[0..1] : offsets = Diagonals[2..3]
     else
       offsets = Diagonals
@@ -219,6 +223,8 @@ class Pawn
   end
 
   def perform_moves(*move_sequence)
+    #REV: does splat operator here mean you call this with something like
+    #REV: perform_moves([1,2][2,3])  ?
     perform_moves!(move_sequence) if valid_move_seq?(move_sequence)
   end
 
