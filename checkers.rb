@@ -70,6 +70,7 @@ class Board
     end
   end
 
+  # Used for testing only
   def move!(s_pos, e_pos)
      start_x, start_y = s_pos[0], s_pos[1]
      end_x, end_y = e_pos[0], e_pos[1]
@@ -80,6 +81,7 @@ class Board
      @grid[end_x][end_y] = @grid[start_x][start_y]
      @grid[end_x][end_y].position = e_pos if !@grid[end_x][end_y].nil?
      @grid[start_x][start_y] = nil
+
    end
 
 
@@ -107,9 +109,6 @@ class Board
      end
 
      slide!(start_pos, end_pos)
-
-     # validate the move
-     # illegal slide should raise an InvalidMoveError.
    end
 
 
@@ -121,10 +120,6 @@ class Board
      end
 
      jump!(start_pos, end_pos)    # Perform jump
-     #@board.jump!(@position, end_pos)
-     # validate the move
-     # remove the jumped piece from the
-     # illegal jump should raise an InvalidMoveError.
    end
 
 end  #END BOARD
@@ -189,6 +184,7 @@ class Pawn
       dx3, dy3 = dx2 + offset[0], dy2 + offset[1] #next next spot
 
       next if ( !is_valid?([dx3,dy3]) || occupied?([dx3,dy3]) ||  !occupied?([dx2,dy2]) || occupied?([dx2,dy2], @color) )
+
       possible_moves << [dx3,dy3]
     end
     possible_moves
@@ -200,12 +196,13 @@ class Pawn
 
     dup_board = @board.dup
     moves = move_sequence
+    dup_pawn = @board.grid[@position[0]][@position[1]].dup
 
     begin
-      if (@position[0]- moves[0][0]).abs == 2
-
+      if (dup_pawn.position[0] - moves[0][0]).abs == 2
         (moves.size).times do |t|
-          dup_board.perform_jump(@position, moves[t])
+          dup_board.perform_jump(dup_pawn.position, moves[t])
+          dup_pawn.position = moves[t]
         end
       else
         #Slides
@@ -226,11 +223,9 @@ class Pawn
   def perform_moves!(move_sequence)
     moves = move_sequence
 
-
     if (@position[0]- moves[0][0]).abs == 2
-
       (moves.size).times do |t|
-        @board.perform_jump(@position, moves[t])
+        @board.perform_jump(self.position, moves[t])
       end
     else
       #Slides
@@ -252,9 +247,9 @@ pawn = game.grid[2][0]
 game.print_board
 pawn.king = true
 
+game.move!([6,4], [3,1])
 
-
-puts pawn.perform_moves([4,1])
+pawn.perform_moves([4,2], [6,4])
 
 #  begin
 #  game.perform_moves(pawn.position, [4,2])
