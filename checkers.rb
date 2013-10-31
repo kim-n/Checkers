@@ -4,9 +4,9 @@ end
 class Board
   attr_accessor :grid
 
-  def initialize
+  def initialize(dup = false)
     @grid = Array.new(8){ Array.new(8) {nil} }
-    addpawns
+    addpawns unless dup
   end
 
   def addpawns
@@ -82,20 +82,50 @@ class Board
      @grid[start_x][start_y] = nil
    end
 
-   # def perform_moves
-   #   if move_sequence.size > 1
-   #     begin
-   #       perform_moves!(*move_sequence)
-   #     #perform jump
-   #   else
-   #     #perform slide sequence
-   #   end
-   #
-   #   # checks validmove_seq?
-   #   # calls perform_moves! or raises InvalidMoveError
-   # end
+
+   def dup
+     dup_board = self.class.new(true)
+
+     8.times do |x|
+       8.times do |y|
+         unless @grid[x][y].nil?
+           dup_board.grid[x][y] = @grid[x][y].dup
+           dup_board.grid[x][y].board = dup_board  #dup the piece
+         end
+       end
+     end
+
+     dup_board
+   end
 
 
+   def perform_slide(start_pos, end_pos)
+     if piece_at(start_pos).nil?
+       raise InvalidMoveError, "Nothing at start position"
+     elsif !piece_at(start_pos).slide_moves.include?(end_pos)
+       raise InvalidMoveError, "Cant slide to that position"
+     end
+
+     slide!(start_pos, end_pos)
+
+     # validate the move
+     # illegal slide should raise an InvalidMoveError.
+   end
+
+
+   def perform_jump(start_pos, end_pos)
+     if piece_at(start_pos).nil?
+       raise InvalidMoveError, "Nothing at start"
+     elsif !piece_at(start_pos).jump_moves.include?(end_pos)
+       raise InvalidMoveError, "Can't jump to end"
+     end
+
+     jump!(start_pos, end_pos)    # Perform jump
+     #@board.jump!(@position, end_pos)
+     # validate the move
+     # remove the jumped piece from the
+     # illegal jump should raise an InvalidMoveError.
+   end
 
 end  #END BOARD
 
@@ -116,7 +146,9 @@ class Pawn
     @king = king
   end
 
-
+  def dup
+    self.class.new(@color, @board, @position, @king)
+  end
   def offsets
     offsets = []
     unless self.king
@@ -164,63 +196,48 @@ class Pawn
   end
 
 
-  def perform_slide(start_pos, end_pos)
-    if @board.piece_at(start_pos).nil?
-      raise InvalidMoveError, "Nothing at start position"
-    elsif !self.slide_moves.include?(end_pos)
-      raise InvalidMoveError, "Cant slide to that position"
-    end
+  def valid_move_seq?(move_sequence)
 
-    @board.slide!(start_pos, end_pos)
-    # validate the move
-    # illegal slide should raise an InvalidMoveError.
-  end
-
-
-  def perform_jump(start_pos, end_pos)
-    if @board.piece_at(start_pos).nil?
-      raise InvalidMoveError, "Nothing at start"
-    elsif !self.jump_moves.include?(end_pos)
-      p self.jump_moves
-      raise InvalidMoveError, "Can't jump to end"
-    end
-
-    @board.jump!(start_pos, end_pos)    # Perform jump
-    #@board.jump!(@position, end_pos)
-    # validate the move
-    # remove the jumped piece from the
-    # illegal jump should raise an InvalidMoveError.
-  end
-
-  def validmove_seq?
-    # calls perform_moves! on a duped Piece/Board
-    # should not modify original board
-    # If no error is raised return true else false.
-    #
-  end
-
-
-
-
-  def perform_moves!(*move_sequence)
+    dup_board = @board.dup
     moves = move_sequence
-    if moves.size > 1
-      #perform jumps
-      (moves.size-1).times do |t|
-        perform_jump(moves[t], moves[t+1])
+
+    begin
+      if (@position[0]- moves[0][0]).abs == 2
+
+        (moves.size).times do |t|
+          dup_board.perform_jump(@position, moves[t])
+        end
+      else
+        #Slides
+        dup_board.perform_slide(@position, moves[0])
+      end
+    rescue InvalidMoveError => e
+      puts e
+      return false
+    end
+    true
+  end
+
+  def perform_moves(*move_sequence)
+    perform_moves!(move_sequence) if valid_move_seq?(move_sequence)
+  end
+
+
+  def perform_moves!(move_sequence)
+    moves = move_sequence
+
+
+    if (@position[0]- moves[0][0]).abs == 2
+
+      (moves.size).times do |t|
+        @board.perform_jump(@position, moves[t])
       end
     else
-
-      #perform slide sequence
+      #Slides
+      @board.perform_slide(@position, moves[0])
     end
-    # that takes a sequence of moves
-    # one slide or
-    # one or more jumps.
-    # should perform the moves one-by-one.
-    # If move in sequence fails, raise InvalidMoveError
-    # Do not restore original board state if move fails
-  end
 
+  end
 
 end
 
@@ -230,28 +247,38 @@ game = Board.new
 
 pawn = game.grid[2][0]
 
-game.move!([5,1], [3,1])
+
 
 game.print_board
 pawn.king = true
 
 
-puts
-game.print_board
 
- begin
- pawn.perform_moves!(pawn.position, [4,2])
+puts pawn.perform_moves([4,1])
 
- #pawn.perform_jump(pawn.position, [4,2])
-rescue InvalidMoveError => e
-  puts e
-
-end
+#  begin
+#  game.perform_moves(pawn.position, [4,2])
+#
+#  #pawn.perform_jump(pawn.position, [4,2])
+# rescue InvalidMoveError => e
+#   puts e
+#
+# end
 
 puts
 game.print_board
 p pawn.jump_moves()
 p pawn.slide_moves()
+
+
+
+
+
+
+
+
+
+
 #
 #
 #  #game.move!([2,0], [4,2])
