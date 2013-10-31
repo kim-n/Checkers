@@ -10,7 +10,19 @@ class Board
   end
 
   def piece_at(pos)
-    @grid[pos[0]][pos[1]]
+    @grid[pos[0]][pos[1]] unless @grid[pos[0]][pos[1]].nil?
+  end
+
+  def move!(s_pos, e_pos)
+    start_x, start_y = s_pos[0], s_pos[1]
+    end_x, end_y = e_pos[0], e_pos[1]
+
+    #Removes stray pointers
+    @grid[end_x][end_y].board = nil if !@grid[end_x][end_y].nil?
+
+    @grid[end_x][end_y] = @grid[start_x][start_y]
+    @grid[end_x][end_y].position = e_pos if !@grid[end_x][end_y].nil?
+    @grid[start_x][start_y] = nil
   end
 
   def print_board
@@ -63,11 +75,7 @@ class Pawn
   def offsets
     offsets = []
     if self.king != true
-      if self.color == :w
-        offsets = Diagonals[0..1]
-      else
-        offsets = Diagonals[2..3]
-      end
+      self.color == :w ? offsets = Diagonals[0..1] : offsets = Diagonals[2..3]
     else
       offsets = Diagonals
     end
@@ -80,56 +88,90 @@ class Pawn
   end
 
   def occupied?(pos,color = nil)
-    piece_at_pos = board.piece_at(pos)  # nil if there is no piece there
+    piece_at_pos = @board.piece_at(pos)  # nil if there is no piece there
     if color.nil?
       piece_at_pos
-    else
+    elsif !piece_at_pos.nil?
       piece_at_pos && (piece_at_pos).color == color
+    else
+      nil
     end
+
   end
 
-  def king_moves
+
+  def pawn_jump_moves
     possible_moves = []
     offsets.each do |offset|
       dx, dy = @position[0] + offset[0], @position[1]+ offset[1]
+      if is_valid?([dx,dy]) && occupied?([dx,dy])
+        possible_moves += [dx,dy] if !occupied?([dx+offset[0],dy+ offset[1]])
+      end
+    end
+
+    possible_moves
+
+
+    # elsif occupied?([dx,dy], @color) #occupied by me
+    #   break
+    # else  #occupied by next color
+    #   #check that position after is empty
+    #   dx, dy = dx + offset[0], dy + offset[1]
+    #   next unless is_valid?([dx,dy])
+    #   if occupied?([dx,dy]) # by anyone
+    #     break
+    #   else  #blank spot
+    #     possible_moves << [dx,dy]
+    #     dx, dy = dx + offset[0], dy + offset[1]
+    #   end
+    # end
+  end
+
+
+  def slide_moves
+    offsets = self.offsets
+    possible_moves = []
+
+    offsets.each do |offset|
+      dx, dy = @position[0] + offset[0], @position[1]+ offset[1]
       while is_valid?([dx,dy])
-        if !occupied?([dx,dy])
-          possible_moves << [dx, dy]
-          dx, dy = dx + offset[0], dy + offset[1]
-        elsif occupied?([dx,dy], @color) #occupied by me
-          break
-        else  #occupied by next color
-          #check that position after is empty
-          dx, dy = dx + offset[0], dy + offset[1]
-          if occupied?([dx,dy]) # by anyone
-            break
-          else  #blank spot
-            possible_moves << [dx,dy]
-            dx, dy = dx + offset[0], dy + offset[1]
-          end
-        end
+        break if occupied?([dx,dy])
+        possible_moves << [dx, dy]
+        break if @king == false
+        dx, dy = dx + offset[0], dy + offset[1]
       end
     end
     possible_moves
   end
 
-  def pawn_moves
-    possible_moves = []
-    offsets.each do |offset|
-      dx, dy = @position[0] + offset[0], @position[1]+ offset[1]
-      possible_moves << [dx,dy] if is_valid?([dx,dy]) && !occupied?([dx,dy])
-    end
-
-    possible_moves
-  end
-
-  def slide_moves
-    offsets = self.offsets
-
-    self.king == true ? king_moves : pawn_moves
-  end
-
   def jump_moves
+    offsets = self.offsets
+    possible_moves = []
+
+    jump_sequence(@position)
+    #offsets.each do |offset|
+  end
+
+  def jump_sequence(pos)
+    offsets = self.offsets
+    possible_moves = {}
+
+    offsets.each do |offset|
+      dx, dy = pos[0], pos[1]
+      moves = Hash.new{[]}
+
+      while(is_valid?([dx,dy]))
+        dx2, dy2 = dx + offset[0], dy + offset[1] #next spot
+        dx3, dy3 = dx2 + offset[0], dy2 + offset[1] #next next spot
+        opposite_color = @color == :w ? :b : :w
+        break if ( !is_valid?([dx3,dy3]) || occupied?([dx3,dy3]) || occupied?([dx2,dy2], @color) )
+        moves[[dx,dy]] += [dx3,dy3]
+        dx, dy = dx3 , dy3
+        jump_sequence([dx,dy]) if @king == true
+      end
+      possible_moves = moves
+    end
+    possible_moves
 
   end
 
@@ -170,7 +212,19 @@ end
 
 game = Board.new
 game.print_board
-pawn = game.grid[2][4]
+pawn = game.grid[2][0]
 p pawn.slide_moves()
-pawn.king = true
-p pawn.slide_moves()
+
+
+#pawn.king = true
+
+ #game.move!([2,0], [4,2])
+ game.move!([6,4], [3,1])
+ game.print_board
+
+# #p game.piece_at([1,1]).color
+ #pawn = game.grid[4][2]
+
+
+p pawn.slide_moves()  # slidedoes not take care of nil
+p pawn.jump_moves()
