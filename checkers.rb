@@ -5,8 +5,12 @@ class Board
   attr_accessor :grid
 
   def initialize
-    @grid = Array.new(8){ Array.new(8) {'-'} }
-    add_pawns
+    @grid = Array.new(8){ Array.new(8) {nil} }
+    addpawns
+  end
+
+  def piece_at(pos)
+    @grid[pos[0]][pos[1]]
   end
 
   def print_board
@@ -15,14 +19,14 @@ class Board
         if @grid[i][j].is_a?(Pawn)
           print "#{@grid[i][j].color} "
         else
-          print "#{@grid[i][j]} "
+          print "- "
         end
       end
       print "\n"
     end
   end
 
-  def add_pawns
+  def addpawns
     8.times do |row|
       color = row < 4 ? :w : :b
       8.times do |col|
@@ -75,35 +79,45 @@ class Pawn
     pos.all? {|d| d.between?(0,7)}
   end
 
+  def occupied?(pos,color = nil)
+    piece_at_pos = board.piece_at(pos)  # nil if there is no piece there
+    if color.nil?
+      piece_at_pos
+    else
+      piece_at_pos && (piece_at_pos).color == color
+    end
+  end
+
   def king_moves
-    # possible_moves = []
-   #  offsets.each do |offset|
-   #    d_x, d_y = @position[0] + offset[0], @position[1]+ offset[1]
-   #    while is_valid?([d_x,d_y])
-   #      if unoccupied?(d_x, d_y)
-   #        possible_moves << [d_x,d_y]
-   #        d_x, d_y = d_x + offset[0], d_y + offset[1]
-   #      elsif #occupied by me
-   #        break
-   #      else  #occupied by next color
-   #        #check that position after is empty
-   #        d_x, d_y = d_x + offset[0], d_y + offset[1]
-   #        if occupied (d_x, d_y) # by anyone
-   #          break
-   #        else  #blank spot
-   #          possible_moves << [d_x,d_y]
-   #          d_x, d_y = d_x + offset[0], d_y + offset[1]
-   #      end
-   #    end
-   #  end
-   #  possible_moves
+    possible_moves = []
+    offsets.each do |offset|
+      dx, dy = @position[0] + offset[0], @position[1]+ offset[1]
+      while is_valid?([dx,dy])
+        if !occupied?([dx,dy])
+          possible_moves << [dx, dy]
+          dx, dy = dx + offset[0], dy + offset[1]
+        elsif occupied?([dx,dy], @color) #occupied by me
+          break
+        else  #occupied by next color
+          #check that position after is empty
+          dx, dy = dx + offset[0], dy + offset[1]
+          if occupied?([dx,dy]) # by anyone
+            break
+          else  #blank spot
+            possible_moves << [dx,dy]
+            dx, dy = dx + offset[0], dy + offset[1]
+          end
+        end
+      end
+    end
+    possible_moves
   end
 
   def pawn_moves
     possible_moves = []
     offsets.each do |offset|
-      d_x, d_y = @position[0] + offset[0], @position[1]+ offset[1]
-      possible_moves << [d_x,d_y] if is_valid?([d_x,d_y])
+      dx, dy = @position[0] + offset[0], @position[1]+ offset[1]
+      possible_moves << [dx,dy] if is_valid?([dx,dy])
     end
 
     possible_moves
@@ -130,7 +144,7 @@ class Pawn
     # illegal jump should raise an InvalidMoveError.
   end
 
-  def valid_move_seq?
+  def validmove_seq?
     # calls perform_moves! on a duped Piece/Board
     # should not modify original board
     # If no error is raised return true else false.
@@ -138,7 +152,7 @@ class Pawn
   end
 
   def perform_moves
-    # checks valid_move_seq?
+    # checks validmove_seq?
     # calls perform_moves! or raises InvalidMoveError
   end
 
