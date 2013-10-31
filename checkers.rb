@@ -149,11 +149,11 @@ class Pawn
     possible_moves = []
 
     jump_sequence(@position)
-    #offsets.each do |offset|
   end
 
   def jump_sequence(pos)
     offsets = self.offsets
+
     possible_moves = {}
 
     offsets.each do |offset|
@@ -163,16 +163,15 @@ class Pawn
       while(is_valid?([dx,dy]))
         dx2, dy2 = dx + offset[0], dy + offset[1] #next spot
         dx3, dy3 = dx2 + offset[0], dy2 + offset[1] #next next spot
-        opposite_color = @color == :w ? :b : :w
-        break if ( !is_valid?([dx3,dy3]) || occupied?([dx3,dy3]) || occupied?([dx2,dy2], @color) )
-        moves[[dx,dy]] += [dx3,dy3]
+
+        break if ( !is_valid?([dx3,dy3]) || occupied?([dx3,dy3]) ||   occupied?([dx2,dy2], @color) )
+        moves[[dx,dy]] += [[dx3,dy3]]
         dx, dy = dx3 , dy3
-        jump_sequence([dx,dy]) if @king == true
+        # jump_sequence([dx,dy]) if @king == true
       end
-      possible_moves = moves
+      possible_moves.merge!(moves){|key, oldval, newval| newval + oldval}
     end
     possible_moves
-
   end
 
   def perform_slide
@@ -216,15 +215,18 @@ pawn = game.grid[2][0]
 p pawn.slide_moves()
 
 
-#pawn.king = true
+pawn.king = true
 
  #game.move!([2,0], [4,2])
  game.move!([6,4], [3,1])
+ game.move!([2,0], [6,4])
+
+ pawn = game.grid[6][4]
  game.print_board
 
 # #p game.piece_at([1,1]).color
  #pawn = game.grid[4][2]
 
 
-p pawn.slide_moves()  # slidedoes not take care of nil
+ pawn.slide_moves()  # slidedoes not take care of nil
 p pawn.jump_moves()
