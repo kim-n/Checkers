@@ -117,7 +117,7 @@ class Pawn
     possible_moves = []
     offsets.each do |offset|
       dx, dy = @position[0] + offset[0], @position[1]+ offset[1]
-      possible_moves << [dx,dy] if is_valid?([dx,dy])
+      possible_moves << [dx,dy] if is_valid?([dx,dy]) && !occupied?([dx,dy])
     end
 
     possible_moves
@@ -170,7 +170,7 @@ end
 
 game = Board.new
 game.print_board
-pawn = game.grid[1][3]
+pawn = game.grid[2][4]
 p pawn.slide_moves()
 pawn.king = true
 p pawn.slide_moves()
