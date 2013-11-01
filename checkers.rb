@@ -1,6 +1,13 @@
+# encoding: UTF-8
+# REV: If you use the above line you can copy/paste the Unicode symbol directly
+# REV: instead of having to use the number code
+
+# REV: Put Piece, Board, Game, and Player classes in separate files
+
 class InvalidMoveError < StandardError
 end
 
+# REV: put in separate file
 class Board
   attr_accessor :grid
 
@@ -14,6 +21,8 @@ class Board
       color = row < 4 ? :w : :b
       8.times do |col|
         if (row + col) % 2 == 0
+          # REV: I'm not sure why you didn't do [0,2,6,1,5,7].include?(row)
+          # REV: Since you do the same thing in both cases
           if [0,2,6].include?(row)
             @grid[row][col] = Pawn.new(color, self, [row, col])
           elsif [1,5,7].include?(row)
@@ -57,6 +66,7 @@ class Board
 
   end
 
+  # REV: Use colorize and Unicode symbols
   def print_board
     8.times do |i|
       8.times do |j|
@@ -70,6 +80,7 @@ class Board
     end
   end
 
+  # REV: Maybe make it private if it's for internal use only
   # Used for testing only
   def move!(s_pos, e_pos)
      start_x, start_y = s_pos[0], s_pos[1]
@@ -124,6 +135,8 @@ class Board
 
 end  #END BOARD
 
+
+# REV: Put in separate file
 class Pawn
   attr_accessor :color, :board, :position, :king
 
@@ -215,6 +228,7 @@ class Pawn
     true
   end
 
+  # REV: Wondering why you used a splat here, isn't move_sequence an array?
   def perform_moves(*move_sequence)
     perform_moves!(move_sequence) if valid_move_seq?(move_sequence)
   end
@@ -235,6 +249,10 @@ class Pawn
   end
 
 end
+
+# REV: Make a Game class that does all of the below stuff in a loop
+# REV: maybe use "if $PROGRAM_NAME == __FILE__"
+# REV: to create and play a game when you enter a "ruby game.rb" command
 
 #________T_E_S_T_S_________#
 
